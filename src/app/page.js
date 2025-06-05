@@ -36,13 +36,13 @@ export default function OrderSlipPage() {
   };
 
   const downloadPDF = () => {
-    const element = document.getElementById("slip");
-    if (window.html2pdf) {
-      window.html2pdf().from(element).save(`${formData.name}_Slip.pdf`);
-    } else {
-      alert("PDF library not loaded!");
-    }
-  };
+  if (typeof window === "undefined") return; // Server pe kuch na karo
+
+  const element = document.getElementById("slip");
+  if (!element) return alert("Slip element nahi mila");
+
+  html2pdf().from(element).save(`${formData.name || "Slip"}_Slip.pdf`);
+};
 
   return (
     <div className="min-h-screen bg-pink-50 flex flex-col items-center py-8 px-4 sm:py-10 font-sans">
