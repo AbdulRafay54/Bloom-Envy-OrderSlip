@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import html2pdf from "html2pdf.js";
 import { QRCodeCanvas } from "qrcode.react";
+import jsPDF from "jspdf";
+import domtoimage from "dom-to-image";
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -22,8 +24,12 @@ export default function OrderSlipPage() {
   useEffect(() => {
     const lastOrder = localStorage.getItem("orderNo");
     const nextOrder = lastOrder ? parseInt(lastOrder) + 1 : 1;
-    setFormData((prev) => ({ ...prev, orderNo: nextOrder }));
-    localStorage.setItem("orderNo", nextOrder);
+
+    // Convert number to 6-digit format: 000001, 000002
+    const paddedOrder = String(nextOrder).padStart(6, "0");
+
+    setFormData((prev) => ({ ...prev, orderNo: paddedOrder }));
+    localStorage.setItem("orderNo", nextOrder); // Store raw number
   }, []);
 
   const handleChange = (e) => {
@@ -35,14 +41,17 @@ export default function OrderSlipPage() {
     setSubmitted(true);
   };
 
-  // const downloadPDF = () => {
-  //   const element = document.getElementById("slip");
-  //   if (window.html2pdf) {
-  //     window.html2pdf().from(element).save(`${formData.name}_Slip.pdf`);
-  //   } else {
-  //     alert("PDF library not loaded!");
-  //   }
-  // };
+  const downloadPDF = () => {
+    const node = document.getElementById("slip");
+    domtoimage.toPng(node).then((dataUrl) => {
+      const pdf = new jsPDF();
+      const img = new Image();
+      img.src = dataUrl;
+      pdf.addImage(img, "PNG", 35, 20, 120, 160);
+
+      pdf.save("slip.pdf");
+    });
+  };
 
   return (
     <div className="min-h-screen bg-pink-50 flex flex-col items-center py-8 px-4 sm:py-10 font-sans">
@@ -160,6 +169,12 @@ export default function OrderSlipPage() {
             <option value="Chocolate Bouquet">Chocolate Bouquet</option>
             <option value="Rose Ribbon Bouquet">Rose Ribbon Bouquet</option>
             <option value="Makeup Bouquet">Makeup Bouquet</option>
+            <option value="Customized Bouquet">Customized Bouquet</option>
+            <option value="Cash Bouquet">Cash Bouquet</option>
+            <option value="Customized Basket">Customized Basket</option>
+            <option value="Snack Basket">Snack Basket</option>
+            <option value="Deal for Men">Deal for Men</option>
+            <option value="Deal for Women">Deal for Women</option>
           </select>
 
           <label
@@ -222,7 +237,7 @@ export default function OrderSlipPage() {
               <div className="text-center">
                 <div className="text-gray-500">Tracking ID</div>
                 <div className="text-[10px] sm:text-xs font-mono bg-black text-white px-2 py-1 rounded tracking-widest">
-                  BE-{formData.orderNo}
+                  BE-{formData.orderNo.slice(-2)}
                 </div>
               </div>
               <div className="text-right">
@@ -254,10 +269,7 @@ export default function OrderSlipPage() {
           </div>
 
           <div className="flex justify-center my-4 sm:my-6">
-            <QRCodeCanvas
-              value={`https://bloom-envy.vercel.app`}
-              size={100}
-            />
+            <QRCodeCanvas value={`https://bloom-envy.vercel.app`} size={100} />
           </div>
 
           <div className="text-xs text-right text-gray-600">
@@ -268,7 +280,7 @@ export default function OrderSlipPage() {
 
       {submitted && (
         <button
-          onClick={handleChange}
+          onClick={downloadPDF}
           className="mt-4 sm:mt-6 bg-green-600 hover:bg-green-700 text-white py-2 sm:py-3 px-6 sm:px-8 rounded-lg font-semibold text-sm sm:text-base transition-colors duration-300"
         >
           Download PDF
